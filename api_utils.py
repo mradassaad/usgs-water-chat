@@ -9,6 +9,10 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from tenacity import retry, wait_random_exponential, stop_after_attempt
+from langchain.pydantic_v1 import BaseModel, Field
+from langchain.tools import BaseTool, StructuredTool, tool
+from langchain_core.utils.function_calling import convert_to_openai_function
+from langchain_openai import ChatOpenAI
 
 GPT_MODEL = "gpt-3.5-turbo-0613"
 
@@ -27,9 +31,21 @@ def chat_completion_request(client, messages, tools=None, tool_choice=None, mode
         print(f"Exception: {e}")
         return e
 
-def get_thing_data(thing_id: str):
+@tool
+def querty_usgs_sensorthings_api(url: str):
     """
-    Get the data for a specific station between the start and end dates.
+    Query the USGS SensorThings API. 
+    :param url: the URL to query
+    :return: the response from the API
+    """
+    print(f"[INFO] Querying USGS SensorThings API at {url}")
+    response = requests.get(url)
+    return response
+
+@tool
+def get_thing_data(thing_id: str) -> dict:
+    """
+    Get the data for a specific USGS thing using the `thing_id`.
     :param thing_id: the thing id
     :return: a pandas dataframe with the data
     """
