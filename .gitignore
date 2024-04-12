@@ -2,3 +2,4 @@ usgs-water-chat/
 playground.ipynb
 openai_key.txt
 *.pyc
+.vscode/
