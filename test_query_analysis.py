@@ -65,7 +65,7 @@ class TestQueryAnalysis(unittest.TestCase):
         # Check the result
         expected_filter = []
         for id in ['00060', '00061', '30208', '50042', '72137']:
-            expected_filter.append(f"Datastreams/ObservedProperty/@iot.id eq {id}")
+            expected_filter.append(f"Datastreams/ObservedProperty/@iot.id eq '{id}'")
         expected_filter = f"({(' or '.join(expected_filter))})"
         self.assertEqual(result, expected_filter)
 
@@ -87,7 +87,8 @@ class TestQueryAnalysis(unittest.TestCase):
         result = search_url.url
         
         # Check the result
-        expected_url = f"https://labs.waterdata.usgs.gov/sta/v1.1/Things?$filter=(properties/state eq 'CA' and properties/county eq 'Los Angeles' and properties/active eq True and properties/monitoringLocationType eq 'Stream')&$count=true"
+        expected_url = f"https://labs.waterdata.usgs.gov/sta/v1.1/Things?$filter=(properties/state eq 'CA' and properties/county eq 'Los Angeles' and properties/active eq True and properties/monitoringLocationType eq 'Stream')"
+        expected_url += "&$select=@iot.id,properties/state,properties/county,properties/active,properties/monitoringLocationType&$count=true"
         self.assertEqual(result, expected_url)
 
     def test_construct_url_2(self):
@@ -113,13 +114,18 @@ class TestQueryAnalysis(unittest.TestCase):
         expected_url = "https://labs.waterdata.usgs.gov/sta/v1.1/Things" \
             "?$filter=(properties/state eq 'CA' and properties/county eq 'Los Angeles' and properties/active eq True and properties/monitoringLocationType eq 'Stream')"
 
-
         observed_property_filter = []
         for id in ['00060', '00061', '30208', '50042', '72137']:
-            observed_property_filter.append(f"Datastreams/ObservedProperty/@iot.id eq {id}")
+            observed_property_filter.append(f"Datastreams/ObservedProperty/@iot.id eq '{id}'")
         observed_property_filter = f"({(' or '.join(observed_property_filter))})"
 
-        expected_url += f" and {observed_property_filter}&$count=true"
+        expected_url += f" and {observed_property_filter}"
+        expected_url += "&$expand=Datastreams("\
+                "$select=@iot.id,description;"\
+                "$expand=Observations("\
+                "$select=result,phenomenonTime;"\
+                "$orderby=phenomenonTime desc))"
+        expected_url += "&$select=@iot.id,properties/state,properties/county,properties/active,properties/monitoringLocationType&$count=true"
 
         self.assertEqual(result, expected_url)
 
