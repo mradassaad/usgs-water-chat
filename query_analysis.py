@@ -46,10 +46,22 @@ class ThingsSearchUrl:
 
         if and_filters and observed_property_filters:
             self.url += "?$filter=" + and_filters + " and " + observed_property_filters
+            self.url += "&$expand=Datastreams("\
+		                "$select=@iot.id,description;"\
+		                "$expand=Observations("\
+			            "$select=result,phenomenonTime;"\
+			            "$orderby=phenomenonTime desc))"
         elif and_filters:
             self.url += "?$filter=" + and_filters
         elif observed_property_filters:
             self.url += "?$filter=" + observed_property_filters
+            self.url += "&$expand=Datastreams("\
+		                "$select=@iot.id,description;"\
+		                "$expand=Observations("\
+			            "$select=result,phenomenonTime;"\
+			            "$orderby=phenomenonTime desc))"
+            
+        self.url += "&$select=@iot.id,properties/state,properties/county,properties/active,properties/monitoringLocationType"
 
         self.add_count()
     
@@ -96,7 +108,7 @@ class ThingsSearchUrl:
     
     def get_observed_property_filter_str(self) -> str:
         """
-        Add observed property-based filter to the URL based on the search parameters.
+        Return an observed property-based filter to be added to the URL.
         :return: the filter string
         """
         filter_str = ""
@@ -106,12 +118,13 @@ class ThingsSearchUrl:
         
         filters = []
         for id in id_dict.keys():
-            filters.append(f"Datastreams/ObservedProperty/@iot.id eq {id}")
+            filters.append(f"Datastreams/ObservedProperty/@iot.id eq '{id}'")
 
         if filters:
             filter_str += "(" + " or ".join(filters) + ")"
 
         return filter_str if filter_str else None
+    
             
     def add_count(self) -> None:
         """
@@ -173,10 +186,16 @@ def generate_url(query: str) -> dict:
         model=GPT_MODEL,
         temperature=0)
 
+    # Build chain and invoke it
     structured_llm = llm.with_structured_output(ThingsSearchModel)
     query_analyzer = {"question": RunnablePassthrough()} | prompt | structured_llm
-    retrieval_chain = query_analyzer | things_retrieval
-    return retrieval_chain.invoke(query)
+    things_search = query_analyzer.invoke(query)
+
+    # Construct SensorThings API URL
+    search_url = ThingsSearchUrl(things_search)
+    search_url.construct_url()
+
+    return search_url.url
 
 def generate_summary_from_json(data: dict) -> str:
     """
