@@ -32,7 +32,7 @@ def chat_completion_request(client, messages, tools=None, tool_choice=None, mode
         return e
 
 @tool
-def querty_usgs_sensorthings_api(url: str):
+def query_usgs_sensorthings_api(url: str):
     """
     Query the USGS SensorThings API. 
     :param url: the URL to query
