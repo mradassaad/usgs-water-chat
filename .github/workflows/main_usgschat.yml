@@ -5,9 +5,6 @@
 name: Build and deploy Python app to Azure Web App - usgschat
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -70,7 +67,7 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_88E30F67FFF54D7AB09873808CEBC5B6 }}
 
       - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3.0.1
         id: deploy-to-webapp
         with:
           app-name: 'usgschat'
