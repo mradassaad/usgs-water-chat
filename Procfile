@@ -1,1 +1,0 @@
-web: gunicorn --chdir dash app:app
