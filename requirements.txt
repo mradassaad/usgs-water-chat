@@ -9,3 +9,5 @@ beautifulsoup4==4.12.3
 faiss-cpu==1.8.0
 langchainhub==0.1.15
 Flask==3.0.3
+fastapi==0.111.0
+dash==2.17.1
