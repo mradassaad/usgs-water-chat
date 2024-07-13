@@ -28,7 +28,3 @@ with st.form("my_form"):
         st.info("Please add your OpenAI API key to continue.")
     elif submitted:
         generate_response(text)
-
-if __name__ == '__main__':     
-    
-    st.set_option('server.enableCORS', True)
