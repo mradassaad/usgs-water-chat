@@ -3,3 +3,4 @@ playground.ipynb
 openai_key.txt
 *.pyc
 .vscode/
+knowledgebase_rag/data/
