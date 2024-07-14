@@ -6,6 +6,5 @@ tenacity==8.2.3
 langchain==0.1.14
 langchain-openai==0.1.1
 beautifulsoup4==4.12.3
-faiss-cpu==1.8.0
 langchainhub==0.1.15
 streamlit==1.36.0
