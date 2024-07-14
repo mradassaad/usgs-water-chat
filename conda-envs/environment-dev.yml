@@ -1,0 +1,14 @@
+# "dev" conda envs are to be used by devs in setting their local environments
+name: usgs-chat-dev
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Base dependencies
+  - python=3.12.2
+  - pip
+  - pip:
+    - -r requirements.txt
+  # Development dependencies
+  - jupyter=1.0.0
+  - pytorch::faiss-cpu=1.8.0
