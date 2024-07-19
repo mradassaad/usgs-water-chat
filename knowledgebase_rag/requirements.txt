@@ -5,5 +5,7 @@
 azure-functions==1.20.0
 requests==2.32.3
 unstructured==0.14.10
+unstructured[openai]
+unstructured[pinecone]
 pinecone-client==4.1.2
 beautifulsoup4==4.12.3

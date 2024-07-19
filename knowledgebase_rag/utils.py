@@ -8,6 +8,23 @@ import datetime
 import logging
 from urllib.parse import urlparse
 
+# Unstructured imports
+from unstructured.partition.auto import partition
+from unstructured.chunking.basic import chunk_elements
+from unstructured.embed.openai import OpenAIEmbeddingConfig, OpenAIEmbeddingEncoder
+from unstructured.documents.elements import Element
+
+# Pinecone imports
+from pinecone import Pinecone
+from pinecone.core.client.exceptions import NotFoundException
+
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s'
+)
+
+
 # Function to check if a URL is valid.
 def is_valid_url(url: str) -> str:
     """
@@ -36,7 +53,7 @@ def is_valid_url(url: str) -> str:
     return url
 
 # Function to find all pages with the same base URL.
-def find_pages_from_base(base_url: str, max_pages: int = 1000) -> list:
+def find_pages_from_base(base_url: str, max_pages: int = 1000) -> list[str]:
     """Find all pages with the same base URL. Uses beautiful soup to scan the base page for child pages.
     This function will recursively scan child pages for more child pages until the max_pages is reached or no new pages are found.
 
@@ -107,3 +124,93 @@ def find_pages_from_base(base_url: str, max_pages: int = 1000) -> list:
             scrape(page)
 
     return list(visited)
+
+# Function to process unstructured data from a webpage.
+def unstructured_page_processing(
+        url: str,
+        max_characters: int = 512,
+        new_after_n_chars: int = 10,
+        overlap: int = 50,
+        overlap_all: bool = False
+        ) -> list[Element]:
+    """Process data from a webpage using the Unstructure package. 
+    This function will process scraped the webpage by partitioning, chunking, and embedding each chunk.
+    It will return a list of embedded chunks.
+
+    Args:
+        url (str): A URL to process.
+        max_characters (int): The maximum number of characters per chunk. Defaults to 512.
+        new_after_n_chars (int): The number of characters to wait before starting a new chunk. Defaults to 10.
+        overlap (int): The maximum number of characters to overlap between chunks. Defaults to 50.
+        overlap_all (bool): A boolean to indicate if all chunks should overlap. Defaults to False.
+
+    Returns:
+        list: A list of embedded chunks.
+    """
+
+    # Define the OpenAI API key
+    open_ai_api_key = os.getenv("OPENAI_API_KEY")
+
+    # Partition webpage into elements
+    elements = partition(url=url)
+
+    # Chunk elements
+    chunks = chunk_elements(elements,
+                            max_characters=max_characters,
+                            new_after_n_chars=new_after_n_chars,
+                            overlap=overlap,
+                            overlap_all=overlap_all)
+    
+    # Embed chunks
+    embedding_encoder = OpenAIEmbeddingEncoder(config=OpenAIEmbeddingConfig(api_key=open_ai_api_key, model_name="text-embedding-3-small"))
+    embeddings = embedding_encoder.embed_documents(elements=chunks)
+
+    logging.info(f"Successfully computed embeddings for the webpage {url}.")
+    
+
+    return embeddings
+
+# Function to update embeddings in Pinecone.
+def update_embeddings_in_pinecone(embeddings: list[Element]) -> None:
+    """Update embeddings in Pinecone. This function will upsert embeddings to a Pinecone index.
+
+    Args:
+        embeddings (list): A list of embeddings.
+        index_name (str): The name of the Pinecone index.
+        api_key (str): The Pinecone API key.
+
+    Returns:
+        None
+    """
+
+    # Prepare data for upsert
+    data = []
+    for element in embeddings:
+        data.append({
+            'id': element.id,
+            'values': element.embeddings,
+            'metadata': {
+                        'url': element.metadata.url,
+                        'text': element.text,
+            }
+        })
+
+    # Initialize Pinecone
+    pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+    index_name = os.getenv("PINECONE_INDEX_NAME")
+    index = pc.Index(index_name)
+
+
+    # Remove existing embeddings in database
+    namespace = os.getenv("PINECONE_NAMESPACE")
+    try:
+        index.delete(delete_all=True, namespace=namespace)
+    except (AttributeError, NotFoundException) as e:
+        logging.error(f"Error deleting embeddings: {e}, probably because namespace {namespace} does not exist.")
+
+    # Upsert embeddings
+    index.upsert(items=embeddings, namespace=namespace)
+
+    logging.info(f"Successfully upserted {len(embeddings)} embeddings to the Pinecone index {index_name}.")
+
+    return None
