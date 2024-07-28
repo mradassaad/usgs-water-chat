@@ -1,35 +1,34 @@
 """ Helper functions for web scraping, Unstructured data processing, embedding calculations, and upserting to Pinecone. """
 
-import os
-import requests
-from bs4 import BeautifulSoup
-import os
-import datetime
 import logging
+import os
 from urllib.parse import urlparse
 
-# Unstructured imports
-from unstructured.partition.auto import partition
-from unstructured.chunking.basic import chunk_elements
-from unstructured.embed.openai import OpenAIEmbeddingConfig, OpenAIEmbeddingEncoder
-from unstructured.documents.elements import Element
+import requests
+from bs4 import BeautifulSoup
 
 # Pinecone imports
 from pinecone import Pinecone
-from pinecone.core.client.exceptions import NotFoundException, PineconeApiException
+from pinecone.core.client.exceptions import NotFoundException
+from unstructured.chunking.basic import chunk_elements
+from unstructured.documents.elements import Element
+from unstructured.embed.openai import OpenAIEmbeddingConfig, OpenAIEmbeddingEncoder
+
+# Unstructured imports
+from unstructured.partition.auto import partition
 
 # Configure logger
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s",
 )
 
 
 # Function to check if a URL is valid.
 def is_valid_url(url: str) -> str:
     """
-    Check if a URL is valid. If the URL is not valid, raise a ValueError. 
-    
+    Check if a URL is valid. If the URL is not valid, raise a ValueError.
+
     Args:
         url (str): A URL to check.
 
@@ -41,16 +40,23 @@ def is_valid_url(url: str) -> str:
         logging.warning("URL cannot be None.")
         raise ValueError("URL cannot be None.")
     elif not url.startswith("https://"):
-        logging.error("Invalid URL. Please provide a valid URL that starts with https://.")
-        raise ValueError("Invalid URL. Please provide a valid URL that starts with https://.")
-    elif any(char in url for char in ['<', '>', '"', "'", ';', '(', ')', '&', '|', '`']):
-        logging.error(f"Invalid character found in URL.")
-        raise ValueError(f"Invalid character found in URL.")
-    
+        logging.error(
+            "Invalid URL. Please provide a valid URL that starts with https://."
+        )
+        raise ValueError(
+            "Invalid URL. Please provide a valid URL that starts with https://."
+        )
+    elif any(
+        char in url for char in ["<", ">", '"', "'", ";", "(", ")", "&", "|", "`"]
+    ):
+        logging.error("Invalid character found in URL.")
+        raise ValueError("Invalid character found in URL.")
+
     if not url.endswith("/"):
         url += "/"
 
     return url
+
 
 # Function to find all pages with the same base URL.
 def find_pages_from_base(base_url: str, max_pages: int = 1000) -> list[str]:
@@ -68,7 +74,7 @@ def find_pages_from_base(base_url: str, max_pages: int = 1000) -> list[str]:
     # TODO: This function rigidely processes relatives URLs which may not work for some websites like https://learn.microsoft.com/en-us/azure/azure-functions/.
 
     # Check if the URL is valid
-    base_url = is_valid_url(base_url)  
+    base_url = is_valid_url(base_url)
 
     # List to store pages to visit and set to store visited pages
     visited = set()
@@ -79,11 +85,11 @@ def find_pages_from_base(base_url: str, max_pages: int = 1000) -> list[str]:
         parsed_url = urlparse(url)
 
         # Send a GET request to the webpage
-        page = requests.get(url)
+        page = requests.get(url, timeout=10)
         # Parse the HTML content using BeautifulSoup
         soup = BeautifulSoup(page.content, "html.parser")
         links = soup.find_all("a")
-        
+
         for link in links:
             href = link.get("href")
 
@@ -93,7 +99,7 @@ def find_pages_from_base(base_url: str, max_pages: int = 1000) -> list[str]:
                 new_url = url.replace(parsed_url.path, "") + href
             elif href is not None and (href.startswith(url)):
                 new_url = href
-            
+
             # Disregard anchor urls
             if new_url is not None and "#" in new_url:
                 new_url = None
@@ -125,15 +131,16 @@ def find_pages_from_base(base_url: str, max_pages: int = 1000) -> list[str]:
 
     return list(visited)
 
+
 # Function to process unstructured data from a webpage.
 def unstructured_page_processing(
-        url: str,
-        max_characters: int = 512,
-        new_after_n_chars: int = 10,
-        overlap: int = 50,
-        overlap_all: bool = False
-        ) -> list[Element]:
-    """Process data from a webpage using the Unstructure package. 
+    url: str,
+    max_characters: int = 512,
+    new_after_n_chars: int = 10,
+    overlap: int = 50,
+    overlap_all: bool = False,
+) -> list[Element]:
+    """Process data from a webpage using the Unstructure package.
     This function will process scraped the webpage by partitioning, chunking, and embedding each chunk.
     It will return a list of embedded chunks.
 
@@ -155,20 +162,26 @@ def unstructured_page_processing(
     elements = partition(url=url)
 
     # Chunk elements
-    chunks = chunk_elements(elements,
-                            max_characters=max_characters,
-                            new_after_n_chars=new_after_n_chars,
-                            overlap=overlap,
-                            overlap_all=overlap_all)
-    
+    chunks = chunk_elements(
+        elements,
+        max_characters=max_characters,
+        new_after_n_chars=new_after_n_chars,
+        overlap=overlap,
+        overlap_all=overlap_all,
+    )
+
     # Embed chunks
-    embedding_encoder = OpenAIEmbeddingEncoder(config=OpenAIEmbeddingConfig(api_key=open_ai_api_key, model_name="text-embedding-3-small"))
+    embedding_encoder = OpenAIEmbeddingEncoder(
+        config=OpenAIEmbeddingConfig(
+            api_key=open_ai_api_key, model_name="text-embedding-3-small"
+        )
+    )
     embeddings = embedding_encoder.embed_documents(elements=chunks)
 
     logging.info(f"Successfully computed embeddings for the webpage {url}.")
-    
 
     return embeddings
+
 
 # Function to update embeddings in Pinecone.
 def update_embeddings_in_pinecone(embeddings: list[Element]) -> None:
@@ -186,32 +199,37 @@ def update_embeddings_in_pinecone(embeddings: list[Element]) -> None:
     # Prepare data for upsert
     data = []
     for element in embeddings:
-        data.append({
-            'id': element.id,
-            'values': element.embeddings,
-            'metadata': {
-                        'url': element.metadata.url,
-                        'text': element.text,
+        data.append(
+            {
+                "id": element.id,
+                "values": element.embeddings,
+                "metadata": {
+                    "url": element.metadata.url,
+                    "text": element.text,
+                },
             }
-        })
+        )
 
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
     index_name = os.getenv("PINECONE_INDEX_NAME")
     index = pc.Index(index_name)
 
-
     # Remove existing embeddings in database
     namespace = os.getenv("PINECONE_NAMESPACE")
     try:
         index.delete(delete_all=True, namespace=namespace)
     except (AttributeError, NotFoundException) as e:
-        logging.error(f"Error deleting embeddings: {e}, probably because namespace {namespace} does not exist.")
+        logging.error(
+            f"Error deleting embeddings: {e}, probably because namespace {namespace} does not exist."
+        )
 
     # Upsert embeddings, upserting in batches of 100
     for i in range(0, len(data), 100):
-        index.upsert(vectors=data[i:i+100], namespace=namespace)
+        index.upsert(vectors=data[i : i + 100], namespace=namespace)
 
-    logging.info(f"Successfully upserted {len(embeddings)} embeddings to the Pinecone index {index_name}.")
+    logging.info(
+        f"Successfully upserted {len(embeddings)} embeddings to the Pinecone index {index_name}."
+    )
 
     return None
