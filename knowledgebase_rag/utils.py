@@ -16,7 +16,7 @@ from unstructured.documents.elements import Element
 
 # Pinecone imports
 from pinecone import Pinecone
-from pinecone.core.client.exceptions import NotFoundException
+from pinecone.core.client.exceptions import NotFoundException, PineconeApiException
 
 # Configure logger
 logging.basicConfig(
@@ -208,8 +208,9 @@ def update_embeddings_in_pinecone(embeddings: list[Element]) -> None:
     except (AttributeError, NotFoundException) as e:
         logging.error(f"Error deleting embeddings: {e}, probably because namespace {namespace} does not exist.")
 
-    # Upsert embeddings
-    index.upsert(items=embeddings, namespace=namespace)
+    # Upsert embeddings, upserting in batches of 100
+    for i in range(0, len(data), 100):
+        index.upsert(vectors=data[i:i+100], namespace=namespace)
 
     logging.info(f"Successfully upserted {len(embeddings)} embeddings to the Pinecone index {index_name}.")
 
