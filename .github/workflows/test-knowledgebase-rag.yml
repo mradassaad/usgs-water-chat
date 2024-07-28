@@ -1,17 +1,18 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Python application
+name: Test Knowledgebase RAG
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - ./knowledgebase_rag
+      - ./knowledgebase_rag/
   pull_request:
     branches: [ "main" ]
     paths:
-      - ./knowledgebase_rag
+      - ./knowledgebase_rag/
+  workflow_dispatch:
 
 permissions:
   contents: read
