@@ -7,7 +7,7 @@ langchain==0.2.8
 langchain-openai==0.1.16
 beautifulsoup4==4.12.3
 langchainhub==0.1.20
-langchain-community==0.2.7
+langchain-community==0.2.9
 streamlit==1.36.0
 unstructured==0.14.10
 pinecone-client==4.1.2
