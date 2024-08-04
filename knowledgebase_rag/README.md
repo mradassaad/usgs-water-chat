@@ -9,3 +9,5 @@ To build a retrieval augmented generation chain for our USGS knowledge base Q&A,
 5. Delete old embeddings from Pinecone index and upload new ones
 
 ![Embeddings Updating](./embeddings_updating.drawio.png)
+
+The scheduled updates allow for automatically updating the embeddings when the contents of the documentation is updated by USGS.
