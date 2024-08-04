@@ -72,6 +72,7 @@ def find_pages_from_base(base_url: str, max_pages: int = 1000) -> list[str]:
     """
 
     # TODO: This function rigidely processes relatives URLs which may not work for some websites like https://learn.microsoft.com/en-us/azure/azure-functions/.
+    # Can learn from extract_sub_links function defined in langchain/libs/core/langchain_core/utils/html.py
 
     # Check if the URL is valid
     base_url = is_valid_url(base_url)
