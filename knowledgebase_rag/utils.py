@@ -10,12 +10,12 @@ from bs4 import BeautifulSoup
 # Pinecone imports
 from pinecone import Pinecone
 from pinecone.core.client.exceptions import NotFoundException
-from unstructured.chunking.basic import chunk_elements
-from unstructured.documents.elements import Element
-from unstructured.embed.openai import OpenAIEmbeddingConfig, OpenAIEmbeddingEncoder
 
 # Unstructured imports
 from unstructured.partition.auto import partition
+from unstructured.chunking.basic import chunk_elements
+from unstructured.documents.elements import Element
+from unstructured.embed.openai import OpenAIEmbeddingConfig, OpenAIEmbeddingEncoder
 
 # Configure logger
 logging.basicConfig(
