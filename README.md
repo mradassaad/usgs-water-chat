@@ -7,7 +7,7 @@ I've only completed:
 
 ## Introduction
 
-USGS-chat is a project aiming at making USGS water services documentation and data available through a chatbot interface implemented using OpenAI's ChatGPT-3.5. The goal of this project is to make US water services data available through natural language through:
+USGS-chat is a project aiming at making USGS water services documentation and data available through a chatbot interface implemented using OpenAI's ChatGPT-4-o. The goal of this project is to make US water services data available through natural language through:
 
 - Retrieving relevant documentation so practitioners can better utilize the USGS water services API
 - Constructing URLs allowing practitioners to directly download the data they need
