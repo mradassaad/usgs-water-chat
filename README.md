@@ -1,5 +1,10 @@
 # USGS Water Chat
 
+NOTE: THIS IS A WORK IN PROGRESS
+
+I've only completed:
+- [knowledgebase_rag](https://github.com/mradassaad/usgs-water-chat/tree/main/knowledgebase_rag), so far, where I push documentation embeddings to Pinecone on a schedule using [Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/functions-overview?pivots=programming-language-python)
+
 ## Introduction
 
 USGS-chat is a project aiming at making USGS water services documentation and data available through a chatbot interface implemented using OpenAI's ChatGPT-3.5. The goal of this project is to make US water services data available through natural language through:
