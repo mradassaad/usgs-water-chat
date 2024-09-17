@@ -3,7 +3,7 @@ numpy==1.26.4
 openai==1.35.14
 requests==2.32.3
 tenacity==8.2.3
-langchain==0.2.8
+langchain==0.2.10
 langchain-openai==0.1.16
 beautifulsoup4==4.12.3
 langchainhub==0.1.20
